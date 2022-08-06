@@ -2,7 +2,9 @@ tool
 extends EditorPlugin
 
 
-const WAKE = "#/" 
+const WAKE = "#/"
+const CPM = 1000
+const PAUSE_BETWEEN = 0
 
 var from_script : String  # path
 var current_text_edit : TextEdit
@@ -50,36 +52,64 @@ func _on_script_text_changed(textEdit:TextEdit):
 		print("From script successfully saved")
 	
 	elif WAKE + "to" in textEdit.text:
+		load_settings()
+		
 		if !from_script:
 			print("NO from SCRIPT DETECTED")
 			return
 		
-		textEdit.set_text("") # clear TO script
+		textEdit.set_text("") # clear to_script
 		
-		load_settings()
-		var script = parse_script_text(from_script)
-		write_to(script, textEdit)
+		write_to(parse_script_text(from_script), textEdit)
 
 
-func write_to(script:Array, textEdit:TextEdit, cpm:int=1000) -> void:
-	timer.set_wait_time(60.0 / cpm) # set time between characrters by chars per minute
+func write_to(blocks:Array, textEdit:TextEdit) -> void:
+	timer.set_wait_time(60.0 / CPM) # set time between characrters by chars per minute
 	
 	var settings = get_editor_interface().get_editor_settings() # "turn off" code suggestions
 	var prev_delay = settings.get("text_editor/completion/code_complete_delay")
 	settings.set_setting("text_editor/completion/code_complete_delay", 5.0)
 	settings.emit_signal("settings_changed")
 	
-	for block_num in script.size():
-		for block in script:
-			if block[0] == block_num:
-				for character in block[1]:
+	for block_num in blocks.size(): # writes at least for each block_num
+		for idx in blocks.size(): # essentially enumerating the 2D blocks array
+			var block = blocks[idx] # get the actual block
+			
+			if block[0] == block_num: # check if we are writing that block num
+				var pos = null
+				if block[0] > 0:
+					var prev_block = blocks[idx - 1][1]
+					pos = textEdit.text.find(prev_block) + prev_block.length()
+					textEdit.text = textEdit.text.insert(pos, "\n\n")
+					pos += block[1].length()
+					
+				for char_num in block[1].length():
 					timer.start()
 					yield(timer, "timeout")
-					textEdit.text += character
 					
-					var line_count = textEdit.text.count("\n")
-					textEdit.cursor_set_line(line_count)
-					textEdit.cursor_set_column(textEdit.text.split("\n")[line_count].length())
+					var character = block[1][char_num]
+					var write_pos : int
+					if block_num == 0: # this is the first block
+						textEdit.text += character # just append to eof
+						continue
+					else: # block > 0
+						if idx == 0: # edge case where block is written before first block
+							write_pos = char_num
+						elif idx > 0:
+							var prev_block = blocks[idx - 1][1]
+							write_pos = textEdit.text.find(prev_block) + prev_block.length() + char_num
+					
+					textEdit.text = textEdit.text.insert(write_pos, character)
+				
+				if pos:
+					var text = textEdit.text
+					text.erase(pos, 2)
+					
+					textEdit.text = text
+					
+#					var line_count = textEdit.text.count("\n")
+#					textEdit.cursor_set_line(line_count)
+#					textEdit.cursor_set_column(textEdit.text.split("\n")[line_count].length())
 	
 	settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
 
@@ -113,42 +143,6 @@ func parse_script_text(text:String) -> Array:
 		blocks = [[0, text]]
 
 	return blocks
-
-#func parse_script_text(text:String):
-#	var blocks := {}
-#
-#	var lines = text.split("\n")
-#	for line_num in lines.size():
-#		var line : String = lines[line_num]
-#		if line and line.begins_with(WAKE) and line[2].is_valid_integer(): # is block
-#			var block_num = int(line[2])
-#			if not blocks.has(block_num): # make it a key if not already
-#				blocks[block_num] = {
-#					"line_nums" : [],
-#					"texts" : []
-#				}
-#			blocks.get(block_num).get("line_nums").append(line_num)
-#
-#	var blocks_raw := text.split(WAKE)
-#	for block in blocks_raw:
-#		if block and block[0].is_valid_integer():
-#			var block_num = int(block[0])
-#			block = PoolStringArray(block.split("\n"))
-#			block.remove(0)
-#			block = block.join("\n")
-#			blocks.get(block_num).get("texts").append(block)
-#
-#	print(blocks.get(1).get("texts"))
-#
-#	return blocks
-
-
-#func get_script_text(path:String):
-#	var file = File.new()
-#	file.open(path, File.READ)
-#	var content = file.get_as_text()
-#	file.close()
-#	return content
 
 
 # SAVE/LOAD SETTINGS FUNCTIONS —————————————————————————————————————————————————————————————————————

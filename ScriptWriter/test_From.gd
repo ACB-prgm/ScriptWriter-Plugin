@@ -7,7 +7,6 @@ var test = 69
 var other = "olleh"
 
 
-
 #/2
 func _ready():
 	print("flase")
@@ -16,3 +15,8 @@ func _ready():
 #/1
 func _process(delta):
 	print("rtue")
+
+#/2
+# this is part 
+# of the second part
+# of the thing
