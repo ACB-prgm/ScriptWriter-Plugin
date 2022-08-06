@@ -11,12 +11,15 @@ var timer : Timer
 
 # VIRTUAL FUNCTIONS ————————————————————————————————————————————————————————————————————————————————
 func _enter_tree():
+	
 	var editor_interface = get_editor_interface()
 	var script_editor = editor_interface.get_script_editor()
 	
 	script_editor.connect("editor_script_changed", self, "_on_editor_script_changed")
 	
-	load_settings()
+	timer = Timer.new() # setup typing timer
+	add_child(timer)
+	timer.set_one_shot(true)
 
 
 func _exit_tree():
@@ -42,74 +45,110 @@ func _on_script_text_changed(textEdit:TextEdit):
 		textEdit.text = ""
 	
 	elif WAKE + "from" in textEdit.text:
-		from_script = get_editor_interface().get_script_editor().get_current_script().get_path()
-		print("%s successfully added" % from_script)
+		from_script = textEdit.text
 		save_settings()
+		print("From script successfully saved")
 	
 	elif WAKE + "to" in textEdit.text:
 		if !from_script:
 			print("NO from SCRIPT DETECTED")
 			return
+		
 		textEdit.set_text("") # clear TO script
 		
-		timer = Timer.new() # setup typing timer
-		add_child(timer)
-		timer.set_wait_time(.05)
-		timer.set_one_shot(true)
-		
-		var settings = get_editor_interface().get_editor_settings() # "turn off" autocomplete
-		var prev_delay = settings.get("text_editor/completion/code_complete_delay")
-		settings.set_setting("text_editor/completion/code_complete_delay", 5.0)
-		settings.emit_signal("settings_changed")
-		
-		var code = parse_script_text(get_script_text(from_script))
-		
-		for character in get_script_text(from_script):
-			timer.start()
-			yield(timer, "timeout")
-			textEdit.text += character
-			
-			var line_count = textEdit.text.count("\n")
-			textEdit.cursor_set_line(line_count)
-			textEdit.cursor_set_column(textEdit.text.split("\n")[line_count].length())
-		
-		settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
+		load_settings()
+		var script = parse_script_text(from_script)
+		write_to(script, textEdit)
 
 
-func parse_script_text(text:String):
-	var blocks := {}
-	var lines = text.split("\n")
-	for line_num in lines.size():
-		var line = lines[line_num]
-		if line[0].is_valid_integer(): # is block
-			var block_num = int(line[0])
-			if not blocks.has(block_num): # make it a key if not already
-				blocks[block_num] = {
-					"line_nums" : [],
-					"texts" : []
-				}
-			blocks.get(block_num).get("line_nums").append(line_num)
+func write_to(script:Array, textEdit:TextEdit, cpm:int=1000) -> void:
+	timer.set_wait_time(60.0 / cpm) # set time between characrters by chars per minute
+	
+	var settings = get_editor_interface().get_editor_settings() # "turn off" code suggestions
+	var prev_delay = settings.get("text_editor/completion/code_complete_delay")
+	settings.set_setting("text_editor/completion/code_complete_delay", 5.0)
+	settings.emit_signal("settings_changed")
+	
+	for block_num in script.size():
+		for block in script:
+			if block[0] == block_num:
+				for character in block[1]:
+					timer.start()
+					yield(timer, "timeout")
+					textEdit.text += character
+					
+					var line_count = textEdit.text.count("\n")
+					textEdit.cursor_set_line(line_count)
+					textEdit.cursor_set_column(textEdit.text.split("\n")[line_count].length())
+	
+	settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
+
+
+func parse_script_text(text:String) -> Array:
+	# returns an 2D array of [block_num:int, block_text:String], with the idx corresponding
+	# to the order of the blocks in the script.  The minimum block_num will always be 0.
+	var blocks := []
 	
 	var blocks_raw := text.split(WAKE)
-	
 	for block in blocks_raw:
-		if block[0].is_valid_integer():
+		if block and block[0].is_valid_integer():
 			var block_num = int(block[0])
-			block = block.split("\n")
-			block.remove(0)
-			blocks.get(block_num).get("texts").apppend(block)
+			
+			block = PoolStringArray(block.split("\n"))
+			block.remove(0) # remove line with WAKE word
+			block = block.join("\n")
+			
+			blocks.append([block_num, block])
 	
-	print(blocks)
+	if blocks: # make 0 the min block_num
+		var block_nums := []
+		for block in blocks:
+			block_nums.append(block[0])
+		var min_block_num = block_nums.min()
+		
+		if min_block_num > 0:
+			for block in blocks:
+				block[0] -= min_block_num
+	else:
+		blocks = [[0, text]]
 
 	return blocks
 
+#func parse_script_text(text:String):
+#	var blocks := {}
+#
+#	var lines = text.split("\n")
+#	for line_num in lines.size():
+#		var line : String = lines[line_num]
+#		if line and line.begins_with(WAKE) and line[2].is_valid_integer(): # is block
+#			var block_num = int(line[2])
+#			if not blocks.has(block_num): # make it a key if not already
+#				blocks[block_num] = {
+#					"line_nums" : [],
+#					"texts" : []
+#				}
+#			blocks.get(block_num).get("line_nums").append(line_num)
+#
+#	var blocks_raw := text.split(WAKE)
+#	for block in blocks_raw:
+#		if block and block[0].is_valid_integer():
+#			var block_num = int(block[0])
+#			block = PoolStringArray(block.split("\n"))
+#			block.remove(0)
+#			block = block.join("\n")
+#			blocks.get(block_num).get("texts").append(block)
+#
+#	print(blocks.get(1).get("texts"))
+#
+#	return blocks
 
-func get_script_text(path:String):
-	var file = File.new()
-	file.open(path, File.READ)
-	var content = file.get_as_text()
-	file.close()
-	return content
+
+#func get_script_text(path:String):
+#	var file = File.new()
+#	file.open(path, File.READ)
+#	var content = file.get_as_text()
+#	file.close()
+#	return content
 
 
 # SAVE/LOAD SETTINGS FUNCTIONS —————————————————————————————————————————————————————————————————————
