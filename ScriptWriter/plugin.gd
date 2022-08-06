@@ -12,7 +12,10 @@ var timer : Timer
 func _enter_tree():
 	var editor_interface = get_editor_interface()
 	var script_editor = editor_interface.get_script_editor()
+	
 	script_editor.connect("editor_script_changed", self, "_on_editor_script_changed")
+	
+	load_settings()
 
 
 func _exit_tree():
@@ -37,6 +40,7 @@ func _on_text_changed(textEdit:TextEdit):
 	if WAKE + "from" in textEdit.text:
 		from_script = get_editor_interface().get_script_editor().get_current_script().get_path()
 		print("%s successfully added" % from_script)
+		save_settings()
 	
 	if WAKE + "to" in textEdit.text and from_script:
 		textEdit.set_text("") # clear TO script
@@ -84,7 +88,7 @@ func load_settings():
 	if dir.file_exists(path):
 		var ERR = config.load(path)
 		if ERR == OK:
-			from_script = config.get_value("settings", "from_path", from_script)
+			from_script = config.get_value("settings", "from_path")
 		else:
 			push_error("ScriptWriter plugin unable to load settings. ERR = %s" % ERR)
 	else:
