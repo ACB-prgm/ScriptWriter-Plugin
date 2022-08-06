@@ -2,7 +2,9 @@ tool
 extends EditorPlugin
 
 
-var from_script := "res://TimeLineLocs.gd"
+const WAKE = "#/" 
+
+var from_script : String  # path
 var current_text_edit : TextEdit
 var timer : Timer
 
@@ -21,29 +23,33 @@ func _on_editor_script_changed(script):
 	var editor_interface = get_editor_interface()
 	var script_editor = editor_interface.get_script_editor()
 	
-#	editor_interface.edit_resource(load(from_script))
 	var textEdit = get_active_text_edit(script_editor)
+	
 	if !textEdit.is_connected("text_changed", self, "_on_text_changed"):
-		if current_text_edit and current_text_edit.is_connected("text_changed", self, "_on_text_changed"):
+		if is_instance_valid(current_text_edit):
 			current_text_edit.disconnect("text_changed", self, "_on_text_changed")
 		textEdit.connect("text_changed", self, "_on_text_changed", [textEdit])
+	
 	current_text_edit = textEdit
 
 
 func _on_text_changed(textEdit:TextEdit):
-	if "/" + "write" in textEdit.text:
-		textEdit.set_text("")
+	if WAKE + "from" in textEdit.text:
+		from_script = get_editor_interface().get_script_editor().get_current_script().get_path()
+		print("%s successfully added" % from_script)
+	
+	if WAKE + "to" in textEdit.text and from_script:
+		textEdit.set_text("") # clear TO script
 		
-		timer = Timer.new()
+		timer = Timer.new() # setup typing timer
 		add_child(timer)
 		timer.set_wait_time(.05)
 		timer.set_one_shot(true)
 		
-		var settings = get_editor_interface().get_editor_settings()
+		var settings = get_editor_interface().get_editor_settings() # "turn off" autocomplete
 		var prev_delay = settings.get("text_editor/completion/code_complete_delay")
 		settings.set_setting("text_editor/completion/code_complete_delay", 5.0)
 		settings.emit_signal("settings_changed")
-		yield(get_tree().create_timer(1), "timeout")
 		
 		for character in get_script_text(from_script):
 			timer.start()
@@ -57,6 +63,10 @@ func _on_text_changed(textEdit:TextEdit):
 		settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
 
 
+func parse_text(text:String):
+	pass
+
+
 func get_script_text(path:String):
 	var file = File.new()
 	file.open(path, File.READ)
@@ -65,6 +75,37 @@ func get_script_text(path:String):
 	return content
 
 
+# SAVE/LOAD SETTINGS ———————————————————————————————————————————————————————————————————————————————
+func load_settings():
+	var path = get_config_path()
+	var dir = Directory.new()
+	var config = ConfigFile.new()
+	
+	if dir.file_exists(path):
+		var ERR = config.load(path)
+		if ERR == OK:
+			from_script = config.get_value("settings", "from_path", from_script)
+		else:
+			push_error("ScriptWriter plugin unable to load settings. ERR = %s" % ERR)
+	else:
+		dir.make_dir_recursive(path.get_base_dir())
+		config.save(path)
+
+func save_settings():
+	if from_script:
+		var config = ConfigFile.new()
+		config.set_value("settings", "from_path", from_script)
+		config.save(get_config_path())
+	else:
+		push_error("ScriptWriter plugin unable to save settings.  from_script == null")
+
+func get_config_path():
+	var dir = get_editor_interface().get_editor_settings().get_project_settings_dir()
+	var path = dir.plus_file("ScriptWriter/ScriptWriterSave.cfg")
+	return path
+
+
+# GET ACTIVE TEXTEDIT FUNCS ————————————————————————————————————————————————————————————————————————
 func find_all_nodes_by_name(root, name) -> Array:
 	var found_nodes : Array
 	if(name in root.get_name()): found_nodes.append(root)
