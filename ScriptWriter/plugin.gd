@@ -38,12 +38,18 @@ func _on_editor_script_changed(script):
 
 
 func _on_script_text_changed(textEdit:TextEdit):
-	if WAKE + "from" in textEdit.text:
+	if WAKE + "clear" in textEdit.text:
+		textEdit.text = ""
+	
+	elif WAKE + "from" in textEdit.text:
 		from_script = get_editor_interface().get_script_editor().get_current_script().get_path()
 		print("%s successfully added" % from_script)
 		save_settings()
 	
-	if WAKE + "to" in textEdit.text and from_script:
+	elif WAKE + "to" in textEdit.text:
+		if !from_script:
+			print("NO from SCRIPT DETECTED")
+			return
 		textEdit.set_text("") # clear TO script
 		
 		timer = Timer.new() # setup typing timer
@@ -55,6 +61,8 @@ func _on_script_text_changed(textEdit:TextEdit):
 		var prev_delay = settings.get("text_editor/completion/code_complete_delay")
 		settings.set_setting("text_editor/completion/code_complete_delay", 5.0)
 		settings.emit_signal("settings_changed")
+		
+		var code = parse_script_text(get_script_text(from_script))
 		
 		for character in get_script_text(from_script):
 			timer.start()
@@ -68,8 +76,32 @@ func _on_script_text_changed(textEdit:TextEdit):
 		settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
 
 
-func parse_text(text:String):
-	pass
+func parse_script_text(text:String):
+	var blocks := {}
+	var lines = text.split("\n")
+	for line_num in lines.size():
+		var line = lines[line_num]
+		if line[0].is_valid_integer(): # is block
+			var block_num = int(line[0])
+			if not blocks.has(block_num): # make it a key if not already
+				blocks[block_num] = {
+					"line_nums" : [],
+					"texts" : []
+				}
+			blocks.get(block_num).get("line_nums").append(line_num)
+	
+	var blocks_raw := text.split(WAKE)
+	
+	for block in blocks_raw:
+		if block[0].is_valid_integer():
+			var block_num = int(block[0])
+			block = block.split("\n")
+			block.remove(0)
+			blocks.get(block_num).get("texts").apppend(block)
+	
+	print(blocks)
+
+	return blocks
 
 
 func get_script_text(path:String):

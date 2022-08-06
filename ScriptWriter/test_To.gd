@@ -1,19 +1,19 @@
 #/from
-#/p1s
+#/1
 extends Node
 
 
 var test = 69
 var other = "olleh"
-#/p1e
+#/1
 
 
-#/p2s
+#/2
 func _ready():
 	print("flase")
-#/p2e
+#/2
 
-#/p1s
+#/1
 func _process(delta):
 	print("rtue")
-#/p1e
+#/1
