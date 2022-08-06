@@ -9,6 +9,7 @@ var current_text_edit : TextEdit
 var timer : Timer
 
 
+# VIRTUAL FUNCTIONS ————————————————————————————————————————————————————————————————————————————————
 func _enter_tree():
 	var editor_interface = get_editor_interface()
 	var script_editor = editor_interface.get_script_editor()
@@ -22,21 +23,21 @@ func _exit_tree():
 	pass
 
 
+# SCRIPT PARSING FUNCTIONS —————————————————————————————————————————————————————————————————————————
 func _on_editor_script_changed(script):
 	var editor_interface = get_editor_interface()
 	var script_editor = editor_interface.get_script_editor()
-	
 	var textEdit = get_active_text_edit(script_editor)
 	
-	if !textEdit.is_connected("text_changed", self, "_on_text_changed"):
+	if !textEdit.is_connected("text_changed", self, "_on_script_text_changed"):
 		if is_instance_valid(current_text_edit):
-			current_text_edit.disconnect("text_changed", self, "_on_text_changed")
-		textEdit.connect("text_changed", self, "_on_text_changed", [textEdit])
+			current_text_edit.disconnect("text_changed", self, "_on_script_text_changed")
+		textEdit.connect("text_changed", self, "_on_script_text_changed", [textEdit])
 	
 	current_text_edit = textEdit
 
 
-func _on_text_changed(textEdit:TextEdit):
+func _on_script_text_changed(textEdit:TextEdit):
 	if WAKE + "from" in textEdit.text:
 		from_script = get_editor_interface().get_script_editor().get_current_script().get_path()
 		print("%s successfully added" % from_script)
@@ -79,7 +80,7 @@ func get_script_text(path:String):
 	return content
 
 
-# SAVE/LOAD SETTINGS ———————————————————————————————————————————————————————————————————————————————
+# SAVE/LOAD SETTINGS FUNCTIONS —————————————————————————————————————————————————————————————————————
 func load_settings():
 	var path = get_config_path()
 	var dir = Directory.new()
@@ -109,7 +110,7 @@ func get_config_path():
 	return path
 
 
-# GET ACTIVE TEXTEDIT FUNCS ————————————————————————————————————————————————————————————————————————
+# GET ACTIVE TEXTEDIT FUNCTIONS ————————————————————————————————————————————————————————————————————
 func find_all_nodes_by_name(root, name) -> Array:
 	var found_nodes : Array
 	if(name in root.get_name()): found_nodes.append(root)
