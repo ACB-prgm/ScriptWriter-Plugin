@@ -1,8 +1,8 @@
-#/from
-#/1
+#/4 
 extends Node
 
 
+#/1
 var test = 69
 var other = "olleh"
 
@@ -16,7 +16,7 @@ func _ready():
 func _process(delta):
 	print("rtue")
 
-#/2
+#/3
 # this is part 
 # of the second part
 # of the thing

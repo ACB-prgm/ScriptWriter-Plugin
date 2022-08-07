@@ -13,7 +13,6 @@ var timer : Timer
 
 # VIRTUAL FUNCTIONS ————————————————————————————————————————————————————————————————————————————————
 func _enter_tree():
-	
 	var editor_interface = get_editor_interface()
 	var script_editor = editor_interface.get_script_editor()
 	
@@ -47,6 +46,7 @@ func _on_script_text_changed(textEdit:TextEdit):
 		textEdit.text = ""
 	
 	elif WAKE + "from" in textEdit.text:
+		textEdit.text = textEdit.text.replace(WAKE + "from", "")
 		from_script = textEdit.text
 		save_settings()
 		print("From script successfully saved")
@@ -59,7 +59,6 @@ func _on_script_text_changed(textEdit:TextEdit):
 			return
 		
 		textEdit.set_text("") # clear to_script
-		
 		write_to(parse_script_text(from_script), textEdit)
 
 
@@ -70,13 +69,20 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 	var prev_delay = settings.get("text_editor/completion/code_complete_delay")
 	settings.set_setting("text_editor/completion/code_complete_delay", 5.0)
 	settings.emit_signal("settings_changed")
+	yield(get_tree().create_timer(0.5), "timeout")
 	
 	for block_num in blocks.size(): # writes at least for each block_num
+		if PAUSE_BETWEEN:
+				timer.set_wait_time(PAUSE_BETWEEN)
+				timer.start()
+				yield(timer, "timeout")
+				timer.set_wait_time(60.0 / CPM)
+		
 		for idx in blocks.size(): # essentially enumerating the 2D blocks array
 			var block = blocks[idx] # get the actual block
 			
 			if block[0] == block_num: # check if we are writing that block num
-				var pos = null
+				var pos = null # this block adds space to write insertions
 				if block[0] > 0:
 					var prev_block = blocks[idx - 1][1]
 					pos = textEdit.text.find(prev_block) + prev_block.length()
@@ -90,8 +96,8 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 					var character = block[1][char_num]
 					var write_pos : int
 					if block_num == 0: # this is the first block
-						textEdit.text += character # just append to eof
-						continue
+						write_pos = textEdit.text.length()
+						
 					else: # block > 0
 						if idx == 0: # edge case where block is written before first block
 							write_pos = char_num
@@ -100,16 +106,14 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 							write_pos = textEdit.text.find(prev_block) + prev_block.length() + char_num
 					
 					textEdit.text = textEdit.text.insert(write_pos, character)
+					var line_count = textEdit.text.left(write_pos).count("\n") # num lines to current char
+					textEdit.cursor_set_line(line_count)
+					textEdit.cursor_set_column(textEdit.text.get_slice("\n", line_count).length()) # num chars on current line
 				
-				if pos:
+				if pos: # cleans up spaces from intertion buffer
 					var text = textEdit.text
 					text.erase(pos, 2)
-					
 					textEdit.text = text
-					
-#					var line_count = textEdit.text.count("\n")
-#					textEdit.cursor_set_line(line_count)
-#					textEdit.cursor_set_column(textEdit.text.split("\n")[line_count].length())
 	
 	settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
 
