@@ -1,6 +1,6 @@
 ![Untitled](https://user-images.githubusercontent.com/63984796/183294294-e048e64a-24ef-4fed-b69f-fe3963813dd1.png)
 # ScriptWriter-Plugin
-A simple plugin to virtually type out scripts for making tutorial videos.  You can set some settings in the plugin.gd script such as `CPM` (characters per minute) and `PAUSE_BETWEEN` (amount of time to pause between writing blocks).  Note: this turns script autocomplete off before starting and back on after finishing.  Thus, if you exit out of the editor or disable the plugin while it is writing your autocomplete will remain off until you go to Editor Settings > Text Editor > Completion.
+A simple plugin to virtually type out scripts for making tutorial videos.  You can set some settings in the plugin.gd script such as `CPM` (characters per minute) and `PAUSE_BETWEEN` (amount of time to pause between writing blocks).  Note: this turns script autocomplete off before starting, and back on after finishing.  Thus, if you exit out of the editor or disable the plugin while it is writing, your autocomplete will remain off until you go to Editor Settings > Text Editor > Completion.
 
 Once enabled, you can use the following commands to use the plugin:
 ### Commands:
