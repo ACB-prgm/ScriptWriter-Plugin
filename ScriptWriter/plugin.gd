@@ -110,7 +110,7 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 					textEdit.text = textEdit.text.insert(write_pos, character)
 					var line_count = textEdit.text.left(write_pos).count("\n") # num lines to current char
 					textEdit.cursor_set_line(line_count)
-					textEdit.cursor_set_column(textEdit.text.get_slice("\n", line_count).length()) # num chars on current line
+					textEdit.cursor_set_column(textEdit.text.split("\n")[line_count].length()) # num chars on current line
 				
 				if pos: # cleans up spaces from intertion buffer
 					var text = textEdit.text
