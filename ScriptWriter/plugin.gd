@@ -18,9 +18,7 @@ func _enter_tree():
 	
 	script_editor.connect("editor_script_changed", self, "_on_editor_script_changed")
 	
-	timer = Timer.new() # setup typing timer
-	add_child(timer)
-	timer.set_one_shot(true)
+	add_timer()
 
 
 func _exit_tree():
@@ -63,6 +61,7 @@ func _on_script_text_changed(textEdit:TextEdit):
 
 
 func write_to(blocks:Array, textEdit:TextEdit) -> void:
+	add_timer()
 	timer.set_wait_time(60.0 / CPM) # set time between characrters by chars per minute
 	
 	var settings = get_editor_interface().get_editor_settings() # "turn off" code suggestions
@@ -84,8 +83,12 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 			if block[0] == block_num: # check if we are writing that block num
 				var pos = null # this block adds space to write insertions
 				if block[0] > 0:
-					var prev_block = blocks[idx - 1][1]
-					pos = textEdit.text.find(prev_block) + prev_block.length()
+					if idx == 0: # edge case where block is written before first block
+							pos = 0
+					elif idx > 0:
+						var prev_block = blocks[idx - 1][1]
+						pos = textEdit.text.find(prev_block) + prev_block.length()
+					
 					textEdit.text = textEdit.text.insert(pos, "\n\n")
 					pos += block[1].length()
 					
@@ -97,7 +100,6 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 					var write_pos : int
 					if block_num == 0: # this is the first block
 						write_pos = textEdit.text.length()
-						
 					else: # block > 0
 						if idx == 0: # edge case where block is written before first block
 							write_pos = char_num
@@ -114,7 +116,7 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 					var text = textEdit.text
 					text.erase(pos, 2)
 					textEdit.text = text
-	
+
 	settings.set_setting("text_editor/completion/code_complete_delay", prev_delay)
 
 
@@ -199,3 +201,11 @@ func get_active_text_edit(script_editor) -> TextEdit:
 		if script_text_editor.is_visible():
 			return script_text_editor.get_node("VSplitContainer/CodeTextEditor/TextEdit")
 	return null
+
+
+# MISC FUNCTIONS ———————————————————————————————————————————————————————————————————————————————————
+func add_timer() -> void:
+	if !timer:
+		timer = Timer.new()
+		add_child(timer)
+		timer.set_one_shot(true)

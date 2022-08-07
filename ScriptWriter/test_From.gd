@@ -1,8 +1,8 @@
-#/4 
+#/1
 extends Node
 
 
-#/1
+
 var test = 69
 var other = "olleh"
 
