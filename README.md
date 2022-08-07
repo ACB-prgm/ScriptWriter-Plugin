@@ -9,6 +9,8 @@ A simple plugin to virtually type out scripts for making tutorial videos.  You c
 3. `#/clear` clears the current script.  Be careful, this cannot be undone with `ctrl+z` / `cmd+z`
 4. `#/` + `integer` divides the from script into blocks (optional). Every line below these commands until another block command is encountered will be included in this block. Thus, you can have several different secions written in the order of the integer provided.
 
-#### FROM EXAMPLE ———————————————————————————————————————————————— TO EXAMPLE
-![FromGIF](https://user-images.githubusercontent.com/63984796/183295415-3c0ec526-9e9f-45af-bc18-3cc06caeb971.gif) ![ToGIF](https://user-images.githubusercontent.com/63984796/183295648-db4a5b86-1e66-4cca-923f-5b39b560fd95.gif)
+#### FROM EXAMPLE
+![FromGIF](https://user-images.githubusercontent.com/63984796/183295415-3c0ec526-9e9f-45af-bc18-3cc06caeb971.gif) 
+#### TO EXAMPLE
+![ToGIF](https://user-images.githubusercontent.com/63984796/183295648-db4a5b86-1e66-4cca-923f-5b39b560fd95.gif)
 
