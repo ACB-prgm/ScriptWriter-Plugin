@@ -161,7 +161,6 @@ func parse_script_text(text:String) -> Array:
 	else:
 		blocks = [[0, text]]
 	
-	print(blocks)
 	return blocks
 
 
