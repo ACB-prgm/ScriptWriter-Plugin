@@ -2,10 +2,12 @@ tool
 extends EditorPlugin
 
 
+# YOU CAN TOUCH
 const WAKE = "#/"
 const CPM = 1000
 const PAUSE_BETWEEN = 0
 
+# NO TOUCHY
 var from_script : String  # path
 var current_text_edit : TextEdit
 var timer : Timer
@@ -60,6 +62,17 @@ func _on_script_text_changed(textEdit:TextEdit):
 		write_to(parse_script_text(from_script), textEdit)
 
 
+func get_prev_block(blocks, idx, current_block):
+	if idx < 0:
+		return null
+	
+	var prev_block = blocks[idx - 1]
+	if prev_block[0] > current_block:
+		return get_prev_block(blocks, idx-1, current_block)
+	else:
+		return prev_block[1]
+
+
 func write_to(blocks:Array, textEdit:TextEdit) -> void:
 	add_timer()
 	timer.set_wait_time(60.0 / CPM) # set time between characrters by chars per minute
@@ -86,7 +99,7 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 					if idx == 0: # edge case where block is written before first block
 							pos = 0
 					elif idx > 0:
-						var prev_block = blocks[idx - 1][1]
+						var prev_block = get_prev_block(blocks, idx, block_num)
 						pos = textEdit.text.find(prev_block) + prev_block.length()
 					
 					textEdit.text = textEdit.text.insert(pos, "\n\n")
@@ -104,7 +117,7 @@ func write_to(blocks:Array, textEdit:TextEdit) -> void:
 						if idx == 0: # edge case where block is written before first block
 							write_pos = char_num
 						elif idx > 0:
-							var prev_block = blocks[idx - 1][1]
+							var prev_block = get_prev_block(blocks, idx, block_num)
 							write_pos = textEdit.text.find(prev_block) + prev_block.length() + char_num
 					
 					textEdit.text = textEdit.text.insert(write_pos, character)
@@ -147,7 +160,8 @@ func parse_script_text(text:String) -> Array:
 				block[0] -= min_block_num
 	else:
 		blocks = [[0, text]]
-
+	
+	print(blocks)
 	return blocks
 
 
